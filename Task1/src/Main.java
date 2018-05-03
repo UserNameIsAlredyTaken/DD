@@ -4,108 +4,96 @@ import java.awt.image.Raster;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.TreeSet;
 
-/**
- * Линии не должны соприкасаться
- * Производится 2 прохода по матрице пикселей
- * В первых проход записываются все горизонтальные линии и линии длинной 1px
- * Во второй все вертикальные, отбрасывая все линии длинной 1px
+
+/** Решение
+ * Создаём ArrayList<Integer> все длины полос
+ * Создаём HashSet<Integer>, содержащий номера пикселей, являющихся пройденными границами линий
+ *
+ * Проходимяся по всем пикселям картинки и ищем края линий (BEGIN), не являющихся углами и ещё не записанные в HashSet
+ * Найдя такую границу записываем её в HashSet и начинаем рекурсивно проходится по ней, определяя направление на каждом шаге,
+ * учитывая что цвет монотонный, считая её длинну до тех пор пока она не закончится
+ * После этого записываем вторую границу в HashSet и длинну линии в ArrayList
+ *
+ * (Рекурсивная функция по проходу, перебор пикселей от 0 до Width*Height)
  */
 
 public class Main {
+    private final static int WHITE_PIXEL_CODE = -1;
+    private static Edge whichEdge(int prevPixCode, int currPixCode, int i, int j, BufferedImage image) {
+        int rightPixCode;
+        int upPixCode;
+        int downPixCode;
+
+        if(j != image.getWidth()-1){
+            rightPixCode = image.getRGB(j+1,i);
+        }else{
+            rightPixCode = WHITE_PIXEL_CODE;
+        }
+
+        if(currPixCode == rightPixCode){
+            return Edge.NONE;
+        }
+
+        if(i != image.getHeight()-1){
+            downPixCode = image.getRGB(j,i+1);
+        }else{
+            downPixCode = WHITE_PIXEL_CODE;
+        }
+
+        if(i != 0){
+            upPixCode = image.getRGB(j,i-1);
+        }else{
+            upPixCode = WHITE_PIXEL_CODE;
+        }
+
+
+    }
+
+    private static void passTheLine(int i, Edge edge, int prevPixCode, Object p3) {
+
+    }
+
+
+
     public static void main(String[] args) {
-        final int WHITE_PIXEL_CODE = -1;
+
         try{
             System.out.println("Enter the path: ");
             String path = new Scanner(System.in).next();
             BufferedImage image = ImageIO.read(new File(path));
-            long sumLength = 0;
-            int count = 0;
+
             ArrayList<Integer> lineLengths = new ArrayList<Integer>();
+            HashSet<Integer> usedEdges = new HashSet<Integer>();
 
-            /*Поиск вертикальных полос и полос длинной 1px*/
+            int prevPixCode;
+            int currPixCode;
             for(int i = 0; i < image.getHeight(); i++){
+                prevPixCode = WHITE_PIXEL_CODE;
                 for(int j = 0; j < image.getWidth(); j++){
-                    if(image.getRGB(j,i) != WHITE_PIXEL_CODE){
-                        int lineLength = 0;
-                        while ((image.getRGB(j,i) != WHITE_PIXEL_CODE)&&(j<image.getWidth())){
-                            lineLength++;
-                            j++;
-                        }
+                    currPixCode = image.getRGB(j,i);
 
-                        if(lineLength == 1){
-                            /*Проверка, что единичная полоса не является не единичной полосой в другой оси*/
-                            if(i == 0){
-                                if((image.getRGB(j-1,i+1) == WHITE_PIXEL_CODE)){
-                                    lineLengths.add(lineLength);
-                                    sumLength+=lineLength;
-                                    count++;
-                                }
-                            }else{
-                                if(i != image.getHeight()-1){
-                                    if((image.getRGB(j-1,i-1) == WHITE_PIXEL_CODE)&&(image.getRGB(j-1,i+1) == WHITE_PIXEL_CODE)){
-                                        lineLengths.add(lineLength);
-                                        sumLength+=lineLength;
-                                        count++;
-                                    }
-                                }else{
-                                    if((image.getRGB(j-1,i-1) == WHITE_PIXEL_CODE)){
-                                        lineLengths.add(lineLength);
-                                        sumLength+=lineLength;
-                                        count++;
-                                    }
-                                }
-                            }
+                    Edge edge = whichEdge(prevPixCode, currPixCode, i, j, image);
+                    if(edge != Edge.NONE){
+                        if(edge == Edge.LEFT){
+                            usedEdges.add(image.getWidth() * i + j);
+                            passTheLine(1,edge,prevPixCode,);
                         }else{
-                            lineLengths.add(lineLength);
-                            sumLength+=lineLength;
-                            count++;
+                            usedEdges.add(image.getWidth() * i + j);
+                            passTheLine(1,edge,currPixCode,);
                         }
 
-//                        //for debag only!!!!!!!!!!!!!!!
-//                        if(lineLength != 1){
-//                            lineLengths.add(lineLength);
-//                            sumLength+=lineLength;
-//                            count++;
-//                        }
-
                     }
+
                 }
             }
 
 
-            /*Поиск горизонтальных полос*/
-            for(int i = 0; i < image.getWidth(); i++){
-                for(int j = 0; j < image.getHeight(); j++){
-                    if(image.getRGB(i,j) != WHITE_PIXEL_CODE){
-                        int lineLength = 0;
-                        while ((image.getRGB(i,j) != WHITE_PIXEL_CODE)&&(j<image.getHeight())){
-                            lineLength++;
-                            j++;
-                        }
 
-                        if(lineLength != 1){
-                            lineLengths.add(lineLength);
-                            sumLength+=lineLength;
-                            count++;
-                        }
-                    }
-                }
-            }
-
-            System.out.println("Количство полос: " + count);
-
-            for(int lineLength : lineLengths){
-                System.out.println(lineLength);
-            }
-
-            System.out.println("Суммарная длинна: " + sumLength);
-
-//            System.out.println("высота " + image.getHeight());
-//            System.out.println("ширина " + image.getWidth());
-
-
+            
         }catch (IOException ioe){
             System.out.println("Couldn't find the image");
         }
