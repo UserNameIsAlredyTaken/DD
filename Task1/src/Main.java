@@ -1,12 +1,10 @@
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Scanner;
-import java.util.TreeSet;
 
 /** Решение
  * Создаём класс VertiStripe, содержащий длинну, код цвета, номер столбца,
@@ -21,7 +19,10 @@ import java.util.TreeSet;
  * Создаём TreeSet<VertiStripe> для горизонтальных полос и TreeSet<HorizStripe> для вертикальных полос,
  * TreeSet сортируются по номерам столбцов вертикальных линий и строк горизонталльных
  *
- * Ищем все вертикальные полосы, и горизонтальные, записывая их в соответствующие TreeSet
+ * Создаём класс Edge содержащий номер границы
+ * Создаём HashSet<Integer> для записи номеров границ вертикальных полос и ещё один для горизонтальных
+ *
+ * Ищем все вертикальные полосы, и горизонтальные, записывая их в соответствующие TreeSet, а границы в HashSet
  * Все полосы длинной 1px сразу записываются в ArrayList<Integer>
  *
  * Проходимся по TreeSet<HorizStripe>: если HorizStripe ещё не входит в состав линии, проверяем, являются ли её края краями какой нибудь из VertiStripe
@@ -30,10 +31,12 @@ import java.util.TreeSet;
  * иначе смотрим на второй край соединённой с ней VertiStripe, если он единаличный край, то линия зписывается в ArrayList<Integer>, переходим к следующей HorizStripe...
  */
 
+/**
+ *
+ */
+
 public class Main {
     private final static int WHITE_PIXEL_CODE = -1;
-
-
 
     public static void main(String[] args) {
 
@@ -43,51 +46,46 @@ public class Main {
             BufferedImage image = ImageIO.read(new File(path));
 
             ArrayList<Integer> lineLengths = new ArrayList<Integer>();
-
-
-
-
-
-
+            HashSet<Edge> edges = new HashSet<Edge>();
+            HashSet<Edge> horEdges = new HashSet<Edge>();
 
 
             /*Поиск вертикальных полос и полос длинной 1px*/
-            for(int i = 0; i < image.getHeight(); i++){
-                for(int j = 0; j < image.getWidth(); j++){
-                    if(image.getRGB(j,i) != WHITE_PIXEL_CODE){
+            for(int i = 0; i < image.getWidth(); i++){
+                for(int j = 0; j < image.getHeight(); j++){
+                    if(image.getRGB(i,j) != WHITE_PIXEL_CODE){
+                        int firstEdgeNumber = j * image.getWidth() + i;
                         int lineLength = 0;
-                        while ((image.getRGB(j,i) != WHITE_PIXEL_CODE)&&(j<image.getWidth())){
+                        int colorCode = image.getRGB(i,j);
+                        while ((image.getRGB(i,j) == colorCode)&&(j<image.getWidth())){
                             lineLength++;
                             j++;
                         }
+                        int secondEdgeNumber = (j - 1) * image.getWidth() + i;
 
                         if(lineLength == 1){
                             /*Проверка, что единичная полоса не является не единичной полосой в другой оси*/
                             if(i == 0){
-                                if((image.getRGB(j-1,i+1) == WHITE_PIXEL_CODE)){
+                                if((image.getRGB(i+1,j-1) != colorCode)){
                                     lineLengths.add(lineLength);
-                                    sumLength+=lineLength;
-                                    count++;
                                 }
                             }else{
-                                if(i != image.getHeight()-1){
-                                    if((image.getRGB(j-1,i-1) == WHITE_PIXEL_CODE)&&(image.getRGB(j-1,i+1) == WHITE_PIXEL_CODE)){
+                                if(i != image.getWidth()-1){
+                                    if((image.getRGB(i-1,j-1) != colorCode)&&(image.getRGB(i+1,j-1) != colorCode)){
                                         lineLengths.add(lineLength);
-                                        sumLength+=lineLength;
-                                        count++;
                                     }
                                 }else{
-                                    if((image.getRGB(j-1,i-1) == WHITE_PIXEL_CODE)){
+                                    if((image.getRGB(j-1,i-1) != colorCode)){
                                         lineLengths.add(lineLength);
-                                        sumLength+=lineLength;
-                                        count++;
                                     }
                                 }
                             }
                         }else{
-                            lineLengths.add(lineLength);
-                            sumLength+=lineLength;
-                            count++;
+                            Edge edge1 = new Edge(firstEdgeNumber, lineLength, colorCode);
+                            Edge edge2 = new Edge(secondEdgeNumber, lineLength, colorCode);
+                            edge1.setAnotherEdge(edge2);
+                            edge2.setAnotherEdge(edge1);
+                            edges.add(edge1); edges.add(edge2);
                         }
                     }
                 }
@@ -95,32 +93,69 @@ public class Main {
 
 
             /*Поиск горизонтальных полос*/
-            for(int i = 0; i < image.getWidth(); i++){
-                for(int j = 0; j < image.getHeight(); j++){
-                    if(image.getRGB(i,j) != WHITE_PIXEL_CODE){
+            for(int i = 0; i < image.getHeight(); i++){
+                for(int j = 0; j < image.getWidth(); j++){
+                    if(image.getRGB(j,i) != WHITE_PIXEL_CODE){
+                        int firstEdgeNumber = i * image.getWidth() + j;
                         int lineLength = 0;
-                        while ((image.getRGB(i,j) != WHITE_PIXEL_CODE)&&(j<image.getHeight())){
+                        int colorCode = image.getRGB(j,i);
+                        while ((image.getRGB(j,i) == colorCode)&&(j<image.getWidth())){
                             lineLength++;
                             j++;
                         }
+                        int secondEdgeNumber = i * image.getWidth() + j - 1;
 
                         if(lineLength != 1){
-                            lineLengths.add(lineLength);
-                            sumLength+=lineLength;
-                            count++;
+                            Edge edge1 = new Edge(firstEdgeNumber, lineLength, colorCode);
+                            Edge edge2 = new Edge(secondEdgeNumber, lineLength, colorCode);
+                            edge1.setAnotherEdge(edge2);
+                            edge2.setAnotherEdge(edge1);
+
+                            for (Edge edge : edges){
+                                if(edge.getPixNumber() == edge1.getPixNumber()){
+                                    edge.setCornerEdge(edge1); edge1.setCornerEdge(edge);
+                                }else if(edge.getPixNumber() == edge2.getPixNumber()){
+                                    edge.setCornerEdge(edge2); edge2.setCornerEdge(edge);
+                                }
+                            }
+
+                            horEdges.add(edge1); horEdges.add(edge2);
                         }
                     }
                 }
             }
 
-            System.out.println("Количство полос: " + count);
+            edges.addAll(horEdges);
 
-            for(int lineLength : lineLengths){
-                System.out.println(lineLength);
+            for(Edge firstEdge : edges){
+                if((firstEdge.getCornerEdge() == null) && (firstEdge.isNotInLineYet())){
+                    firstEdge.setNotInLineYet(false);
+                    Edge secondEdge = firstEdge.getAnotherEdge();
+                    secondEdge.setNotInLineYet(false);
+                    int lineLength = firstEdge.getStripeSize();
+                    while (true){
+                        if(secondEdge.getCornerEdge() == null){
+                            break;
+                        }
+                        firstEdge = secondEdge.getCornerEdge();
+                        firstEdge.setNotInLineYet(false);
+                        secondEdge = firstEdge.getAnotherEdge();
+                        secondEdge.setNotInLineYet(false);
+                        lineLength += firstEdge.getStripeSize();
+                    }
+                    lineLengths.add(lineLength);
+                }
             }
 
-            System.out.println("Суммарная длинна: " + sumLength);
-
+            System.out.println("Количество линий: " + lineLengths.size());
+            int summLength = 0;
+            int i = 0;
+            for(int length : lineLengths){
+                i++;
+                summLength += length;
+                System.out.println("Длинна " + i + "-ой линии: " + length);
+            }
+            System.out.println("Суммарная длинна линий: " + summLength);
 
 
         }catch (IOException ioe){
