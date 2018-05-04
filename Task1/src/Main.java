@@ -6,37 +6,51 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Scanner;
 
-/** Решение
- * Создаём класс VertiStripe, содержащий длинну, код цвета, номер столбца,
- * номера крайних пикселей вертикальной полосы (N[px]=N[строки]*Width[картинки]+N[столбца]) и значение, говорящее о том, входит ли эта полоса в группу
- *
- * Создаём класс HorizStripe, содержащий длинну, код цвета, номер строки,
- * номера крайних пикселей горизонтальной полосы (номера пикселей высчитываются по той же формуле) и значение, говорящее о том, входит ли эта полоса в группу
- *
- * Создаём ArrayList<Integer>, каждым объект которого символизирует линию, состоящую из нескольких вертикальных и горизонталных полос
- * ArrayList<Integer> содержит длинну каждой линии
- *
- * Создаём TreeSet<VertiStripe> для горизонтальных полос и TreeSet<HorizStripe> для вертикальных полос,
- * TreeSet сортируются по номерам столбцов вертикальных линий и строк горизонталльных
- *
- * Создаём класс Edge содержащий номер границы
- * Создаём HashSet<Integer> для записи номеров границ вертикальных полос и ещё один для горизонтальных
- *
- * Ищем все вертикальные полосы, и горизонтальные, записывая их в соответствующие TreeSet, а границы в HashSet
- * Все полосы длинной 1px сразу записываются в ArrayList<Integer>
- *
- * Проходимся по TreeSet<HorizStripe>: если HorizStripe ещё не входит в состав линии, проверяем, являются ли её края краями какой нибудь из VertiStripe
- * Если хотябы один край не является краем другой полосы, то полоса становится членом новой линии и её size добовляется к значению линии
- * Смотрим на второй край, если он единаличный край, то линия зписывается в ArrayList<Integer>, переходим к следующей HorizStripe,
- * иначе смотрим на второй край соединённой с ней VertiStripe, если он единаличный край, то линия зписывается в ArrayList<Integer>, переходим к следующей HorizStripe...
- */
-
 /**
+ * Проходим по матрице сверху вниз, ищем все вертикальные полосы
+ * Если длинна полосы 1px записываем её в лист с информацией о длинах всех полос, иначе запоминаем её границы ссылающиеся друг на друга и имеющие информацию о цвете и длинне полосы
+ *
+ * Проходимся по матрице справа на лево, ищем все горизонтальные полосы
+ * Запоминаем границы полос, проверяем с границами каких вертикальных полос они совпадают, делаем в них соответствующие ссылки
+ *
+ * Складываем множества границ вертикальных и горизонтальных полос, проходимся по полученному множеству
+ * Ищем границу не связанную ни с какой другой границей другой оси, проходимся до кона линии, складывая длины полос из которых она состоит, записываем линию в список
+ *
+ * Выводим информацию из списка
+ *
+ * (не обрабатывает случай, когда монотонные линии идут рядом, так как тогда не ясно как их интерпретировать: как 2 линии, идущие рядом, много линий длинной 2, идущие рядои, или одна линяя, согнувшаяся попалам
+ * не обрабатывает случай, когда линия состоит не только из вертикальных и горизонтальных полос, но и диагональных)
  *
  */
 
 public class Main {
     private final static int WHITE_PIXEL_CODE = -1;
+
+    private static boolean isNotPartOfHorizontal(BufferedImage image, int x, int y){
+        if((x == 0) || (x == image.getWidth() - 1)){return true;}
+        if((image.getRGB(x-1,y) == image.getRGB(x,y)) && (image.getRGB(x+1,y) == image.getRGB(x,y))){
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    private static boolean isNotPartOfVertical(BufferedImage image, int x, int y){
+        if((y == 0) || (y == image.getHeight() - 1)){return true;}
+        if((image.getRGB(x,y-1) == image.getRGB(x,y)) && (image.getRGB(x,y+1) == image.getRGB(x,y))){
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    private static boolean besideTheVerLine(BufferedImage image, int x, int y){
+        if(((x != 0) && (image.getRGB(x,y) == image.getRGB(x-1,y))) || ((x != image.getWidth() - 1) && (image.getRGB(x,y) == image.getRGB(x+1,y)))){
+            return true;
+        }
+        return false;
+    }
+
 
     public static void main(String[] args) {
 
@@ -49,15 +63,14 @@ public class Main {
             HashSet<Edge> edges = new HashSet<Edge>();
             HashSet<Edge> horEdges = new HashSet<Edge>();
 
-
             /*Поиск вертикальных полос и полос длинной 1px*/
             for(int i = 0; i < image.getWidth(); i++){
                 for(int j = 0; j < image.getHeight(); j++){
-                    if(image.getRGB(i,j) != WHITE_PIXEL_CODE){
+                    if((image.getRGB(i,j) != WHITE_PIXEL_CODE) && (isNotPartOfHorizontal(image, i, j))){
                         int firstEdgeNumber = j * image.getWidth() + i;
                         int lineLength = 0;
                         int colorCode = image.getRGB(i,j);
-                        while ((image.getRGB(i,j) == colorCode)&&(j<image.getWidth())){
+                        while ((image.getRGB(i,j) == colorCode) && (j<image.getWidth()) && (isNotPartOfHorizontal(image, i, j))){
                             lineLength++;
                             j++;
                         }
@@ -80,6 +93,7 @@ public class Main {
                                     }
                                 }
                             }
+
                         }else{
                             Edge edge1 = new Edge(firstEdgeNumber, lineLength, colorCode);
                             Edge edge2 = new Edge(secondEdgeNumber, lineLength, colorCode);
@@ -95,17 +109,21 @@ public class Main {
             /*Поиск горизонтальных полос*/
             for(int i = 0; i < image.getHeight(); i++){
                 for(int j = 0; j < image.getWidth(); j++){
-                    if(image.getRGB(j,i) != WHITE_PIXEL_CODE){
+                    if((image.getRGB(j,i) != WHITE_PIXEL_CODE) && (isNotPartOfVertical(image, j, i))){
                         int firstEdgeNumber = i * image.getWidth() + j;
                         int lineLength = 0;
                         int colorCode = image.getRGB(j,i);
-                        while ((image.getRGB(j,i) == colorCode)&&(j<image.getWidth())){
+                        while ((image.getRGB(j,i) == colorCode)&&(j<image.getWidth()) && (isNotPartOfVertical(image, j, i))){
                             lineLength++;
                             j++;
                         }
                         int secondEdgeNumber = i * image.getWidth() + j - 1;
 
-                        if(lineLength != 1){
+                        if(lineLength == 1){
+                            if(besideTheVerLine(image,j-1,i)){
+                                lineLengths.add(lineLength);
+                            }
+                        }else{
                             Edge edge1 = new Edge(firstEdgeNumber, lineLength, colorCode);
                             Edge edge2 = new Edge(secondEdgeNumber, lineLength, colorCode);
                             edge1.setAnotherEdge(edge2);
@@ -142,6 +160,7 @@ public class Main {
                         secondEdge = firstEdge.getAnotherEdge();
                         secondEdge.setNotInLineYet(false);
                         lineLength += firstEdge.getStripeSize();
+                        lineLength--;
                     }
                     lineLengths.add(lineLength);
                 }
@@ -156,7 +175,6 @@ public class Main {
                 System.out.println("Длинна " + i + "-ой линии: " + length);
             }
             System.out.println("Суммарная длинна линий: " + summLength);
-
 
         }catch (IOException ioe){
             System.out.println("Couldn't find the image");
