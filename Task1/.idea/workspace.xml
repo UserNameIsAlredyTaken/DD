@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="42db80a7-ffb9-41d6-90f1-9bc65699111a" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/Task1/Main.class" afterPath="$PROJECT_DIR$/out/production/Task1/Main.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../sample.png" afterPath="$PROJECT_DIR$/../sample.png" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../~$стовое Java весна 2018.docx" afterPath="$PROJECT_DIR$/../~$стовое Java весна 2018.docx" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Main.java" afterPath="$PROJECT_DIR$/src/Main.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../Task2/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../Task2/.idea/workspace.xml" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -661,12 +657,12 @@
       <updated>1525181688920</updated>
       <workItem from="1525181691880" duration="15062000" />
       <workItem from="1525417956470" duration="9359000" />
-      <workItem from="1525453392026" duration="6794000" />
+      <workItem from="1525453392026" duration="6843000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="48598000" />
+    <option name="totallyTimeSpent" value="48647000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-9" y="-9" width="1938" height="1048" extended-state="6" />
