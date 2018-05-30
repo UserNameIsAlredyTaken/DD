@@ -4,11 +4,15 @@
 import com.linuxense.javadbf.*;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static java.nio.file.Files.newBufferedWriter;
 
 public class Main {
     public static void main(String[] args) throws UnsupportedEncodingException {
         String inPath = null, outPath = null, column = null, value = null;
-        try{//TODO use args.length
+        try{
             if(args.length == 4){
                 inPath = args[1];
                 outPath = args[3];
@@ -25,48 +29,30 @@ public class Main {
             InputStream inputStream  = new FileInputStream(inPath);
             DBFReader reader = new DBFReader(inputStream);
 
+            //PrintWriter writer = new PrintWriter(outPath, "UTF-8");
+            Writer writer = newBufferedWriter(Paths.get(outPath));
 
-            PrintWriter writer = new PrintWriter(outPath, "UTF-8");
-            Object []rowObjects;
-            if(args.length > 4){
-                DBFField field = null;
-                int fieldIndx = -1;
-                for(int i=0; i<reader.getFieldCount(); i++) {
-                    field = reader.getField(i);
-                    if(field.getName().contains(column)){
-                        fieldIndx = i;
-                        break;
-                    }
-                }
-
-                if(field == null){
+            if(args.length == 7){
+                int fieldIndex = Utils.getFieldIndex(reader, column);
+                if(fieldIndex == -1){
                     System.out.println("Wrong field name");
                     System.exit(0);
                 }
 
-
-                while( (rowObjects = reader.nextRecord()) != null) {
-                    if(rowObjects[fieldIndx].toString().contains(value)){
-                        for(int i=0; i<rowObjects.length-1; i++) {
-                            writer.print(rowObjects[i] + ",");
-                        }
-                        writer.print(rowObjects[rowObjects.length-1]);
-                        writer.println();
-                    }
-                }
+                Utils.writeTheRow(reader,writer,fieldIndex,value);
             }else{
-                while((rowObjects = reader.nextRecord()) != null) {
-                    for(int i=0; i<rowObjects.length-1; i++) {
-                        writer.print(rowObjects[i] + ",");
-                    }
-                    writer.print(rowObjects[rowObjects.length-1]);
-                    writer.println();
-                }
+                Utils.writeTheRow(reader,writer);
             }
             writer.close();
 
         }catch (FileNotFoundException ex){
             System.out.println("Wrong path");
+        }catch (DBFException dbfex){
+            System.out.println("DBFException");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+
+
 }
